@@ -30,7 +30,14 @@ async function _api(method, path, body) {
 
 // ─── Auth ──────────────────────────────────────────────────────────
 async function signUp(email, password) {
-  const { data, error } = await _sb.auth.signUp({ email, password });
+  // Force email confirmation link to redirect back to Planner.html
+  // (otherwise Supabase falls back to Site URL set in dashboard).
+  const redirectTo = new URL('Planner.html', window.location.href).toString();
+  const { data, error } = await _sb.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: redirectTo },
+  });
   if (error) throw error;
   return data;
 }
