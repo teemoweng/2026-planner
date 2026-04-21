@@ -1,147 +1,151 @@
 # 2026 Planner · 电子手账
 
-A browser-based 2026 planner with a year/month/week/day view system, 4 theme palettes, and an AI assistant that parses natural-language commands ("4月23日三点面试") into structured calendar actions.
+A browser-based 2026 planner with year/month/week/day views, four theme palettes, cloud sync, and an AI assistant that parses natural-language commands (`"4月23日三点面试"`) into structured calendar actions.
 
-Built as a single-page React app loaded via Babel standalone — no build step. Ships with a tiny Python proxy that forwards AI requests to any LLM provider you have a key for.
+**🔗 Live demo:** https://2026-planner-mu.vercel.app
+
+Sign up with any email; data is private per-account and stored in Supabase.
+
+---
+
+## Stack
+
+```
+┌─────────────────────────────────┐        ┌──────────────────────────────┐
+│  Frontend — Vercel (static)     │        │  Backend — Railway (Fluid)    │
+│  Planner.html + planner-app/*.jsx       │  FastAPI + uvicorn            │
+│  React via Babel standalone     │        │  JWKS JWT verification        │
+│  Supabase JS UMD client         │        │  Per-user rate limiting (50/d)│
+└─────────────────────────────────┘        └──────────────────────────────┘
+          │                                             │
+          │                                             ▼
+          │                                ┌───────────────────────────┐
+          │                                │  Supabase Postgres + Auth │
+          │                                │  (user_data JSON blob)    │
+          │                                └───────────────────────────┘
+          │                                             │
+          │  auth token (ES256 JWT)                     ▼
+          └────────────────────────────────▶  LLM provider (pluggable)
+                                              火山方舟 · Claude · DeepSeek
+                                              Kimi · OpenAI · OpenRouter
+```
 
 ## Features
 
-- **Four views**: 年 (year grid) · 月 (month calendar) · 周 (week cards) · 日 (day detail with schedule / to-do / focus / markdown notes / trackers)
-- **Trackers**: weather · mood · water · sleep · meals — each with a compact visual indicator
-- **Theme system**: 4 palettes (amber / graphite / rose / smoky), switchable at runtime, persisted to `localStorage`
-- **AI drawer** (right side): natural-language input → structured actions → applied to the planner
-- **Markdown notes** with live preview
-- **Offline-first data**: everything in `localStorage`, no backend database
+- **Four views**: year grid · month calendar · week cards · day detail with schedule / to-do / focus / markdown notes
+- **Trackers**: weather · mood · water · sleep · meals — compact visual indicators
+- **AI drawer** (right side): parses Chinese + English date/time into one of 11 typed actions, applied to the planner
+- **Theme system**: 4 palettes (amber / graphite / rose / smoky), switchable at runtime
+- **Cloud-synced**: debounce-saved to Supabase; sign in from any device to access the same data
+- **Pluggable LLM backend**: swap providers by changing env vars (OpenAI-compatible and Anthropic protocols both supported)
 
-## Quickstart
+## AI action vocabulary
 
-### 1. Pick a model provider and grab an API key
+Every AI response is constrained to a JSON schema with `reply` plus zero or more actions:
 
-Any of these work — the server speaks two dialects:
+| Action | Goes into |
+| --- | --- |
+| `add_schedule` | Day view schedule (time-specific) |
+| `add_todo` · `set_main_focus` · `append_day_notes` | Day view |
+| `set_weather` · `set_mood` · `set_water` · `set_sleep` · `set_meal` | Day view trackers |
+| `add_monthly_note` | Month view |
+| `navigate` | Switch view (day / month / year) |
 
-| Provider | Base URL | Get a key |
-| --- | --- | --- |
-| Anthropic Claude | `https://api.anthropic.com/v1` | console.anthropic.com |
-| 火山方舟 (Ark / Doubao) | `https://ark.cn-beijing.volces.com/api/v3` | volcengine.com/product/ark |
-| DeepSeek | `https://api.deepseek.com/v1` | platform.deepseek.com |
-| Moonshot (Kimi) | `https://api.moonshot.cn/v1` | platform.moonshot.cn |
-| OpenAI | `https://api.openai.com/v1` | platform.openai.com |
-| OpenRouter | `https://openrouter.ai/api/v1` | openrouter.ai |
-| Local Ollama | `http://localhost:11434/v1` | ollama.com |
+See `buildSystemPrompt` in [`planner-app/AIChat.jsx`](planner-app/AIChat.jsx) for the full contract.
 
-### 2. Start the server
+## Run locally
+
+Two services, two terminals.
+
+### Backend
 
 ```bash
-# Example: 火山方舟 / 豆包
-LLM_PROVIDER=openai \
-LLM_BASE_URL=https://ark.cn-beijing.volces.com/api/v3 \
-LLM_MODEL=doubao-seed-1-6-250615 \
-LLM_API_KEY=ark-... \
-python3 server.py
-
-# Example: Anthropic Claude
-ANTHROPIC_API_KEY=sk-ant-... python3 server.py
-
-# Example: DeepSeek
-LLM_PROVIDER=openai \
-LLM_BASE_URL=https://api.deepseek.com/v1 \
-LLM_MODEL=deepseek-chat \
-LLM_API_KEY=sk-... \
-python3 server.py
+cd backend
+cp .env.example .env                                 # fill in Supabase + LLM keys
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
 ```
 
-Default port is `8000`; pass a port as the first arg to change it (`python3 server.py 8080`).
+### Frontend
 
-### 3. Open the app
-
-http://localhost:8000/Planner.html
-
-Click the **✦ AI** button in the top bar and try:
-- `4.23 三点面试` → schedule entry at 15:00 on Apr 23
-- `明天买牙膏` → to-do on tomorrow
-- `今天喝了5杯水` → water tracker
-- `这个月记得交房租` → monthly note
-
-## Architecture
-
-```
-┌─────────────────┐        ┌────────────────┐         ┌──────────────────┐
-│  Planner.html   │ fetch  │   server.py    │  https  │   LLM provider   │
-│  (React + JSX   │ ─────▶ │ static + /api  │ ──────▶ │   (Ark / Claude  │
-│   via Babel)    │ ◀───── │    /chat       │ ◀────── │   / DeepSeek…)   │
-└─────────────────┘        └────────────────┘         └──────────────────┘
-       │                          │
-       │                          └── holds API key server-side
-       │
-       └── localStorage for planner data + theme
+```bash
+python3 -m http.server 8000
+open http://localhost:8000/Planner.html
 ```
 
-- **`Planner.html`** — app shell, CSS theming, animations, tweak panel. Loads every `planner-app/*.jsx` via `<script type="text/babel">`.
-- **`planner-app/*.jsx`** — React components. `App.jsx` is the root, `AIChat.jsx` is the drawer, views are split per file.
-- **`server.py`** — Python stdlib only. Serves static files AND proxies `/api/chat` to whichever LLM you configured. Anthropic `messages` schema and OpenAI `chat/completions` schema are both supported via an adapter layer.
+The frontend's `apiBase` switches automatically by hostname (localhost → 8001, prod → Railway).
 
-## How the AI works
+### Database
 
-Every request goes through a structured system prompt (see `buildSystemPrompt` in `planner-app/AIChat.jsx`) that constrains the model to:
+Paste [`backend/schema.sql`](backend/schema.sql) into the Supabase SQL editor to bootstrap tables and RLS policies.
 
-1. Return **only** a JSON object shaped as `{reply, actions[]}`.
-2. Pick `actions` from a fixed vocabulary of 11 action types:
+## Supported LLM providers
 
-   | Action | Goes into |
-   | --- | --- |
-   | `add_schedule` | Day view schedule (time-specific) |
-   | `add_todo` / `set_main_focus` / `append_day_notes` | Day view |
-   | `set_weather` / `set_mood` / `set_water` / `set_sleep` / `set_meal` | Day view trackers |
-   | `add_monthly_note` | Month view |
-   | `navigate` | Switch view (day / month / year) |
+The backend speaks two dialects — Anthropic `messages` and OpenAI `chat/completions` — so most providers work with only env-var changes.
 
-3. Parse Chinese and English date/time expressions (`"4.23"`, `"明天"`, `"下周三"`, `"下午3点"`, `"9am"`).
-
-The backend can be swapped freely — the model's identity is hidden behind the system prompt, so the UX doesn't change whether you're on Doubao, Claude, or GPT.
-
-## Configuration
-
-### Environment variables (server)
-
-| Var | Default | Purpose |
+| Provider | `LLM_PROVIDER` | `LLM_BASE_URL` |
 | --- | --- | --- |
-| `LLM_PROVIDER` | auto | `anthropic` or `openai` |
-| `LLM_API_KEY` | — | key for the chosen provider |
-| `LLM_BASE_URL` | provider default | override for compatible endpoints |
-| `LLM_MODEL` | provider default | model id / endpoint id |
-| `LLM_MAX_TOKENS` | `1024` | response cap |
-| `ANTHROPIC_API_KEY` | — | shortcut that implies `LLM_PROVIDER=anthropic` |
+| Anthropic Claude | `anthropic` | `https://api.anthropic.com/v1` |
+| 火山方舟 (Ark / Doubao) | `openai` | `https://ark.cn-beijing.volces.com/api/v3` |
+| DeepSeek | `openai` | `https://api.deepseek.com/v1` |
+| Moonshot (Kimi) | `openai` | `https://api.moonshot.cn/v1` |
+| OpenAI | `openai` | `https://api.openai.com/v1` |
+| OpenRouter | `openai` | `https://openrouter.ai/api/v1` |
+| Local Ollama | `openai` | `http://localhost:11434/v1` |
 
-### Themes
+## Environment variables
 
-Edit the `:root` / `[data-theme="..."]` blocks at the top of `Planner.html` to add or tweak palettes. The runtime tweaks panel (bottom-right in design-preview mode) lets you change accent/bg/texture live without editing CSS.
+### Backend (Railway)
+| Var | Purpose |
+| --- | --- |
+| `SUPABASE_URL` | `https://<project>.supabase.co` |
+| `SUPABASE_ANON_KEY` | legacy anon key |
+| `SUPABASE_SERVICE_KEY` | legacy service_role key (secret) |
+| `LLM_PROVIDER` | `anthropic` or `openai` |
+| `LLM_BASE_URL` | provider base URL |
+| `LLM_MODEL` | model id |
+| `LLM_API_KEY` | provider key (secret) |
+| `LLM_MAX_TOKENS` | response cap (default 1024) |
+| `FREE_TIER_DAILY_AI_CALLS` | per-user quota (default 50) |
+| `CORS_ORIGINS` | comma-separated allowlist |
+
+### Frontend
+Config is inline in [`Planner.html`](Planner.html) (Supabase URL + public anon key + apiBase by hostname). No env vars needed on Vercel; override at runtime via `window.__PLANNER_API_BASE__` if you need a per-deploy backend.
 
 ## Project layout
 
 ```
 .
-├── Planner.html            # entry
+├── Planner.html                # entry (React + Babel, inlined config)
 ├── planner-app/
-│   ├── App.jsx             # root
-│   ├── CoverPage.jsx       # intro cover
-│   ├── TopNav.jsx          # top bar + view switcher
-│   ├── Sidebar.jsx         # mini calendar
-│   ├── YearView.jsx        # 12-month grid
-│   ├── CalendarGrid.jsx    # month view
-│   ├── WeekView.jsx        # week view
-│   ├── DayView.jsx         # day view with trackers
-│   ├── MarkdownEditor.jsx  # notes editor
-│   ├── AIChat.jsx          # AI drawer
-│   ├── Auth.jsx            # login (stub)
-│   └── UserMenu.jsx        # profile menu
-├── server.py               # static + /api/chat proxy
-├── features.pdf            # feature spec
-├── screenshots/            # reference shots (git-ignored)
-└── uploads/                # design assets (git-ignored)
+│   ├── App.jsx                 # root, wires AuthGate + useCloudBlob
+│   ├── AuthGate.jsx            # login/signup UI
+│   ├── cloud.jsx               # Supabase client + /api/* fetchers
+│   ├── AIChat.jsx              # AI drawer + system prompt contract
+│   ├── TopNav.jsx              # month tabs, view switcher, user badge
+│   ├── Sidebar.jsx             # mini calendar + notes
+│   ├── YearView.jsx            # 12-month grid
+│   ├── CalendarGrid.jsx        # month view
+│   ├── WeekView.jsx            # week view
+│   ├── DayView.jsx             # day detail with trackers
+│   ├── MarkdownEditor.jsx      # notes editor
+│   ├── CoverPage.jsx           # intro cover
+│   ├── Auth.jsx                # (legacy local multi-user; unused)
+│   └── UserMenu.jsx            # profile menu (WIP)
+├── backend/
+│   ├── main.py                 # FastAPI app: auth, CRUD, chat proxy
+│   ├── schema.sql              # Postgres tables + RLS policies
+│   ├── Procfile                # Railway start command
+│   ├── runtime.txt             # Python version
+│   └── requirements.txt
+├── vercel.json                 # static deploy config
+└── features.pdf                # spec
 ```
 
 ## Notes
 
-- Data is **local-only** (`localStorage`); no account required. `Auth.jsx` is a placeholder.
-- Opening `Planner.html` via `file://` will fail to load the JSX modules due to CORS — use `python3 server.py` (or any static server).
-- Tested with `doubao-seed-1-6-250615`, `claude-haiku-4-5`, `claude-sonnet-4-6`. Smaller open-source models (<7B) may struggle with the strict JSON output contract.
+- Frontend is classic SPA loaded via Babel standalone — no bundler, no build step.
+- Backend uses JWKS (ES256) to verify Supabase access tokens — no shared JWT secret needed.
+- AI quota is per-user per 24h, enforced via a Postgres function (`ai_usage_last_24h`) before forwarding the request.
+- Auth UI and cover page share styling; theme changes propagate via CSS custom properties.
