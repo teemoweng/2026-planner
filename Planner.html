@@ -21,11 +21,26 @@
 
 <script>
   // Frontend config — anon key is public (protected by RLS); safe to ship.
-  window.__PLANNER_CONFIG__ = {
-    supabaseUrl:     'https://xtyzkpjriljjkwwfrwyu.supabase.co',
-    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eXprcGpyaWxqamt3d2Zyd3l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTk4OTQsImV4cCI6MjA5MjI5NTg5NH0.iu1aeTObAyNbstuTDPT5ONlacWoZXhZyYxL1ZV-gelg',
-    apiBase:         'http://localhost:8001',
-  };
+  //
+  // apiBase is picked by hostname so the same HTML works locally and in
+  // production. Override per-deploy by setting window.__PLANNER_API_BASE__
+  // before this script runs (e.g. via a Vercel-injected snippet).
+  (function () {
+    const override = window.__PLANNER_API_BASE__;
+    const host     = window.location.hostname;
+    const isLocal  = host === 'localhost' || host === '127.0.0.1' || host === '';
+    const apiBase  = override
+      || (isLocal
+            ? 'http://localhost:8001'
+            // ← after Railway deploy, replace this URL or inject via override
+            : 'https://REPLACE-ME-AFTER-RAILWAY-DEPLOY.up.railway.app');
+
+    window.__PLANNER_CONFIG__ = {
+      supabaseUrl:     'https://xtyzkpjriljjkwwfrwyu.supabase.co',
+      supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eXprcGpyaWxqamt3d2Zyd3l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTk4OTQsImV4cCI6MjA5MjI5NTg5NH0.iu1aeTObAyNbstuTDPT5ONlacWoZXhZyYxL1ZV-gelg',
+      apiBase,
+    };
+  })();
 </script>
 
 <style>
