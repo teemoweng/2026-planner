@@ -24,15 +24,15 @@ import jwt
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from jwt import PyJWKClient
 from pydantic import BaseModel
 from supabase import Client, create_client
 
 load_dotenv()
 
 # ─── Config ──────────────────────────────────────────────────────────
-SUPABASE_URL         = os.environ["SUPABASE_URL"]
+SUPABASE_URL         = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
-SUPABASE_JWT_SECRET  = os.environ["SUPABASE_JWT_SECRET"]
 
 LLM_PROVIDER   = os.environ.get("LLM_PROVIDER", "openai")
 LLM_BASE_URL   = os.environ["LLM_BASE_URL"]
@@ -46,6 +46,14 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",")
 
 # Service-role client bypasses RLS. Use for all writes + admin reads.
 sb: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+# JWKS client — fetches Supabase public signing keys and caches them.
+# User access tokens are signed ES256 with ECC P-256 keys (new system).
+_jwks_client = PyJWKClient(
+    f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+    cache_keys=True,
+    lifespan=3600,
+)
 
 
 # ─── Lifespan (shared HTTP client for LLM calls) ─────────────────────
@@ -74,11 +82,13 @@ async def current_user_id(authorization: str | None = Header(None)) -> str:
         raise HTTPException(401, "missing bearer token")
     token = authorization.split(None, 1)[1]
     try:
+        signing_key = _jwks_client.get_signing_key_from_jwt(token).key
         payload = jwt.decode(
             token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
+            signing_key,
+            algorithms=["ES256", "RS256", "EdDSA"],  # Supabase may use any of these
             audience="authenticated",
+            issuer=f"{SUPABASE_URL}/auth/v1",
         )
     except jwt.InvalidTokenError as e:
         raise HTTPException(401, f"invalid token: {e}")
