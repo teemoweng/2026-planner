@@ -32,8 +32,7 @@
     const apiBase  = override
       || (isLocal
             ? 'http://localhost:8001'
-            // ← after Railway deploy, replace this URL or inject via override
-            : 'https://REPLACE-ME-AFTER-RAILWAY-DEPLOY.up.railway.app');
+            : 'https://2026-planner-production.up.railway.app');
 
     window.__PLANNER_CONFIG__ = {
       supabaseUrl:     'https://xtyzkpjriljjkwwfrwyu.supabase.co',
