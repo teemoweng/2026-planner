@@ -4,8 +4,6 @@ A browser-based 2026 planner with a year/month/week/day view system, 4 theme pal
 
 Built as a single-page React app loaded via Babel standalone — no build step. Ships with a tiny Python proxy that forwards AI requests to any LLM provider you have a key for.
 
-![screenshot](screenshots/day-view.png)
-
 ## Features
 
 - **Four views**: 年 (year grid) · 月 (month calendar) · 周 (week cards) · 日 (day detail with schedule / to-do / focus / markdown notes / trackers)
