@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Archives / raw design export
+2026_Planner.zip
+
+# Bulky or private assets — uncomment to include
+uploads/
+screenshots/
+
+# Local env / secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/

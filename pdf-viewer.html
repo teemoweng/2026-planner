@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+body { margin: 0; background: #333; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; }
+canvas { box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 100%; }
+h2 { color: white; }
+</style>
+</head>
+<body>
+<h2 id="title">Loading PDF...</h2>
+<div id="container"></div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function renderPDF(url, title) {
+  document.getElementById('title').textContent = title;
+  const pdf = await pdfjsLib.getDocument(url).promise;
+  const container = document.getElementById('container');
+  for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+    const page = await pdf.getPage(i);
+    const scale = 1.5;
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    container.appendChild(canvas);
+    
+    // Also extract text
+    const textContent = await page.getTextContent();
+    const text = textContent.items.map(i => i.str).join(' ');
+    if (text.trim()) {
+      const p = document.createElement('pre');
+      p.style.cssText = 'color:white;background:#444;padding:10px;max-width:800px;white-space:pre-wrap;';
+      p.textContent = 'Page ' + i + ' text:\n' + text;
+      container.appendChild(p);
+    }
+  }
+}
+
+renderPDF('features2.pdf', '目前想做的功能');
+</script>
+</body>
+</html>

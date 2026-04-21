@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+body { margin: 0; background: #333; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; }
+canvas { box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 100%; }
+#status { color: #fff; font: 16px sans-serif; }
+</style>
+</head>
+<body>
+<div id="status">Loading...</div>
+<div id="container"></div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function renderPDF() {
+  const status = document.getElementById('status');
+  try {
+    const response = await fetch('features2.pdf');
+    const arrayBuffer = await response.arrayBuffer();
+    status.textContent = 'PDF loaded, rendering...';
+    
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    status.textContent = `PDF: ${pdf.numPages} pages`;
+    
+    const container = document.getElementById('container');
+    const textAll = [];
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const vp = page.getViewport({ scale: 1.2 });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width;
+      canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      container.appendChild(canvas);
+      
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(i => i.str).join(' ').trim();
+      if (pageText) {
+        textAll.push(`=== Page ${i} ===\n${pageText}`);
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'color:#fff;background:#444;padding:10px;max-width:900px;white-space:pre-wrap;font:13px monospace;';
+        pre.textContent = `Page ${i}:\n${pageText}`;
+        container.appendChild(pre);
+      }
+    }
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    console.error(e);
+  }
+}
+
+renderPDF();
+</script>
+</body>
+</html>

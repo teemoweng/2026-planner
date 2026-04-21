@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电子手账 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+
+<script>
+  // Apply saved theme before React renders to avoid flash
+  try {
+    const t = localStorage.getItem('planner_theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+  } catch {}
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  /* ═══════════════════════════════════════
+     Theme system — 4 color palettes
+     ═══════════════════════════════════════ */
+  :root,
+  [data-theme="amber"] {
+    --bg:          #1c1a17;
+    --bg-2:        #171510;
+    --bg-rgb:      28, 26, 23;
+    --accent:      #c9a260;
+    --accent-rgb:  201, 162, 96;
+    --text:        #e8dcc8;
+    --text-rgb:    232, 220, 200;
+  }
+  [data-theme="graphite"] {
+    --bg:          #1a2238;
+    --bg-2:        #141a2c;
+    --bg-rgb:      26, 34, 56;
+    --accent:      #c9a260;
+    --accent-rgb:  201, 162, 96;
+    --text:        #e8dcc8;
+    --text-rgb:    232, 220, 200;
+  }
+  [data-theme="rose"] {
+    --bg:          #8e4e62;
+    --bg-2:        #7a4254;
+    --bg-rgb:      142, 78, 98;
+    --accent:      #fadde1;
+    --accent-rgb:  250, 221, 225;
+    --text:        #fff5f3;
+    --text-rgb:    255, 245, 243;
+  }
+  [data-theme="smoky"] {
+    --bg:          #2d4358;
+    --bg-2:        #243749;
+    --bg-rgb:      45, 67, 88;
+    --accent:      #d4a5a5;
+    --accent-rgb:  212, 165, 165;
+    --text:        #efe2dc;
+    --text-rgb:    239, 226, 220;
+  }
+
+  /* Smooth theme transitions on core colors */
+  html, body, #root {
+    transition: background-color 0.6s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif; }
+  body { background: var(--bg); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),0.25); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(var(--accent-rgb),0.4); }
+
+  textarea:focus { outline: none; }
+  * { -webkit-font-smoothing: antialiased; }
+
+  /* ── Hover effects ── */
+
+  /* Month tabs in top nav */
+  .p-month-tab:hover {
+    background: rgba(var(--accent-rgb),0.15) !important;
+    color: rgba(var(--text-rgb),0.85) !important;
+  }
+
+  /* Today button */
+  .p-today-btn:hover {
+    background: rgba(var(--accent-rgb),0.18) !important;
+    color: var(--text) !important;
+    border-color: rgba(var(--accent-rgb),0.5) !important;
+  }
+
+  /* Segmented view buttons */
+  .p-view-icon:hover {
+    background: rgba(var(--accent-rgb),0.15) !important;
+    color: rgba(var(--text-rgb),0.9) !important;
+  }
+
+  /* Week tabs */
+  .p-week-tab:hover {
+    filter: brightness(1.15);
+    border-color: rgba(var(--accent-rgb),0.7) !important;
+    transform: translateY(-1px);
+  }
+
+  /* Mini calendar week rows */
+  .p-mini-week:hover {
+    background: rgba(var(--accent-rgb),0.15) !important;
+    cursor: pointer;
+  }
+
+  /* Mini calendar individual days */
+  .p-mini-day:hover {
+    background: rgba(var(--accent-rgb),0.2) !important;
+    border-radius: 50%;
+  }
+
+  /* Prev/Next month nav buttons */
+  .p-nav-btn:hover {
+    background: rgba(var(--accent-rgb),0.22) !important;
+    border-color: rgba(var(--accent-rgb),0.45) !important;
+    color: var(--text) !important;
+  }
+
+  /* Notes toggle header */
+  .p-notes-header:hover .p-notes-label {
+    color: rgba(var(--text-rgb),0.9) !important;
+  }
+
+  /* Year view month cards */
+  .p-year-card {
+    transition: transform 0.15s, border-color 0.15s, background 0.15s !important;
+  }
+  .p-year-card:hover {
+    border-color: rgba(var(--accent-rgb),0.4) !important;
+    background: rgba(255,255,255,0.045) !important;
+    transform: translateY(-2px);
+    cursor: pointer;
+  }
+
+  /* Year number — click to go back to cover */
+  .p-year-num-btn:hover {
+    color: var(--accent) !important;
+    transform: translateY(-1px);
+  }
+  .p-year-num-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Calendar grid day cells */
+  .p-day-cell {
+    transition: border-color 0.15s, background 0.15s !important;
+  }
+  .p-day-cell:hover {
+    border-color: rgba(var(--accent-rgb),0.35) !important;
+    background: rgba(var(--accent-rgb),0.04) !important;
+    cursor: text;
+  }
+
+  /* Week view day cards */
+  .p-week-card {
+    transition: border-color 0.15s, background 0.15s !important;
+  }
+  .p-week-card:hover {
+    border-color: rgba(var(--accent-rgb),0.4) !important;
+    background: rgba(var(--accent-rgb),0.06) !important;
+    cursor: text;
+  }
+
+  /* Week side panel week tabs in WeekView */
+  .p-wv-tab:hover {
+    background: rgba(var(--accent-rgb),0.25) !important;
+    color: var(--text) !important;
+  }
+
+  /* ═══════════════════════════════════════════════
+     Main app entrance + transition animations
+     ═══════════════════════════════════════════════ */
+
+  @keyframes p-app-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes p-topnav-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes p-sidebar-in {
+    from { opacity: 0; transform: translateX(-14px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes p-content-in {
+    from { opacity: 0; transform: translateY(10px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  @keyframes p-view-swap {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes p-card-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes p-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* App shell fade */
+  .p-app-shell {
+    animation: p-app-in 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Top nav slides down */
+  .p-app-topnav {
+    animation: p-topnav-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+  }
+
+  /* Sidebar slides in from left */
+  .p-app-sidebar {
+    animation: p-sidebar-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+
+  /* Content area rises with slight blur */
+  .p-app-content {
+    animation: p-content-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+  }
+
+  /* View switch - keyed animation */
+  .p-view-swap {
+    animation: p-view-swap 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Month switch — directional slide + fade */
+  @keyframes p-month-in-next {
+    from { opacity: 0; transform: translateX(24px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateX(0);    filter: blur(0); }
+  }
+  @keyframes p-month-in-prev {
+    from { opacity: 0; transform: translateX(-24px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateX(0);     filter: blur(0); }
+  }
+  @keyframes p-month-in-none {
+    from { opacity: 0; transform: scale(0.985); filter: blur(2px); }
+    to   { opacity: 1; transform: scale(1);     filter: blur(0); }
+  }
+  .p-month-swap-next {
+    animation: p-month-in-next 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .p-month-swap-prev {
+    animation: p-month-in-prev 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .p-month-swap-none {
+    animation: p-month-in-none 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Mini calendar in sidebar — soft fade on month change */
+  @keyframes p-mini-cal-swap {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .p-mini-cal-swap {
+    animation: p-mini-cal-swap 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Day view — clickable date number in month grid */
+  .p-day-num-clickable {
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.15s !important;
+  }
+  .p-day-num-clickable:hover {
+    background: rgba(var(--accent-rgb),0.2) !important;
+    color: var(--accent) !important;
+    transform: scale(1.15);
+  }
+
+  /* Day view — enter animation */
+  @keyframes p-day-swap {
+    from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0);   filter: blur(0); }
+  }
+  .p-day-swap {
+    animation: p-day-swap 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Day view — interactive elements */
+  .p-day-icon-btn {
+    transition: color 0.15s, background 0.15s, transform 0.15s !important;
+  }
+  .p-day-icon-btn:hover {
+    color: var(--accent) !important;
+    transform: translateY(-1px);
+  }
+  .p-day-wtab {
+    transition: all 0.2s !important;
+  }
+  .p-day-wtab:hover {
+    background: rgba(var(--accent-rgb),0.28) !important;
+    color: var(--text) !important;
+  }
+  .p-day-sched-input:focus {
+    background: rgba(var(--accent-rgb),0.05) !important;
+    box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),0.25);
+  }
+  .p-day-todo-check {
+    transform-origin: left center;
+  }
+  .p-year-mini-day {
+    transition: transform 0.15s, background 0.15s, color 0.15s;
+  }
+  .p-year-mini-day:hover {
+    transform: scale(1.35);
+    background: rgba(var(--accent-rgb),0.35) !important;
+    color: var(--text) !important;
+    z-index: 2;
+    position: relative;
+  }
+  .p-day-todo-check:hover {
+    transform: scale(1.15);
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.12);
+  }
+
+  /* Month name in day view — jumps back to month view (matches 2026 year click) */
+  .p-day-month-jump {
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+  .p-day-month-jump:hover {
+    color: var(--accent) !important;
+    transform: translateY(-1px);
+  }
+  .p-day-month-jump:active {
+    transform: translateY(0);
+  }
+
+  /* AI button */
+  .p-ai-btn {
+    position: relative;
+  }
+  .p-ai-btn:hover {
+    background: rgba(var(--accent-rgb),0.12) !important;
+    box-shadow: 0 0 16px rgba(var(--accent-rgb),0.25);
+  }
+  .p-ai-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* AI Chat drawer */
+  .p-ai-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    pointer-events: none;
+    z-index: 99;
+    transition: background 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .p-ai-backdrop-open {
+    background: rgba(0,0,0,0.35);
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .p-ai-drawer {
+    transform: translateX(100%);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .p-ai-drawer.p-ai-drawer-open {
+    transform: translateX(0);
+  }
+
+  .p-ai-close:hover {
+    background: rgba(var(--accent-rgb),0.12);
+    color: var(--text);
+  }
+
+  .p-ai-send:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb),0.35);
+  }
+  .p-ai-send:not(:disabled):active {
+    transform: translateY(0);
+  }
+
+  /* Textarea focus */
+  .p-ai-drawer textarea:focus {
+    border-color: rgba(var(--accent-rgb),0.4) !important;
+    background: rgba(var(--accent-rgb),0.08) !important;
+  }
+
+  /* Typing indicator */
+  .p-ai-typing {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .p-ai-typing span {
+    display: inline-block;
+    color: var(--accent);
+    font-size: 18px;
+    line-height: 0.5;
+    animation: p-ai-typing-dot 1.4s infinite;
+  }
+  .p-ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .p-ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes p-ai-typing-dot {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-3px); }
+  }
+
+  /* Year view cards stagger in */
+  .p-year-card-wrap {
+    animation: p-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Smoother, more refined transitions across interactive elements */
+  .p-month-tab,
+  .p-today-btn,
+  .p-view-icon,
+  .p-nav-btn,
+  .p-week-tab,
+  .p-mini-week,
+  .p-mini-day,
+  .p-wv-tab,
+  .p-year-card,
+  .p-day-cell,
+  .p-week-card,
+  .p-year-num-btn {
+    transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+
+  /* Subtle press feedback on clickable elements */
+  .p-month-tab:active,
+  .p-today-btn:active,
+  .p-view-icon:active,
+  .p-nav-btn:active,
+  .p-week-tab:active,
+  .p-wv-tab:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .p-app-shell, .p-app-topnav, .p-app-sidebar, .p-app-content,
+    .p-view-swap, .p-year-card-wrap,
+    .p-month-swap-next, .p-month-swap-prev, .p-month-swap-none,
+    .p-mini-cal-swap {
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="planner-app/MarkdownEditor.jsx"></script>
+<script type="text/babel" src="planner-app/CoverPage.jsx"></script>
+<script type="text/babel" src="planner-app/Sidebar.jsx"></script>
+<script type="text/babel" src="planner-app/TopNav.jsx"></script>
+<script type="text/babel" src="planner-app/CalendarGrid.jsx"></script>
+<script type="text/babel" src="planner-app/YearView.jsx"></script>
+<script type="text/babel" src="planner-app/WeekView.jsx"></script>
+<script type="text/babel" src="planner-app/DayView.jsx"></script>
+<script type="text/babel" src="planner-app/AIChat.jsx"></script>
+<script type="text/babel" src="planner-app/App.jsx"></script>
+
+<script>
+// Tweaks system
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "var(--accent)",
+  "bgColor": "var(--bg)",
+  "textColor": "var(--text)",
+  "dotTexture": true,
+  "showWeekends": true
+}/*EDITMODE-END*/;
+
+let tweaks = { ...TWEAK_DEFAULTS };
+try { Object.assign(tweaks, JSON.parse(localStorage.getItem('planner_tweaks') || '{}')); } catch {}
+
+let tweakPanel = null;
+
+window.addEventListener('message', e => {
+  if (e.data?.type === '__activate_edit_mode') showTweaks();
+  if (e.data?.type === '__deactivate_edit_mode') hideTweaks();
+});
+
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+function showTweaks() {
+  if (tweakPanel) return;
+  tweakPanel = document.createElement('div');
+  tweakPanel.innerHTML = `
+    <div style="position:fixed;bottom:20px;right:20px;background:#2a2620;border:1px solid rgba(var(--accent-rgb),0.3);border-radius:12px;padding:16px;z-index:9999;min-width:220px;font-family:Inter,sans-serif;color:var(--text);font-size:13px;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+      <div style="font-weight:700;margin-bottom:12px;color:var(--accent);letter-spacing:0.08em;font-size:11px;text-transform:uppercase">Tweaks</div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="flex:1">金色强调色</span>
+        <input type="color" id="tw-accent" value="${tweaks.accentColor}" style="border:none;background:none;width:32px;height:24px;cursor:pointer">
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="flex:1">背景色</span>
+        <input type="color" id="tw-bg" value="${tweaks.bgColor}" style="border:none;background:none;width:32px;height:24px;cursor:pointer">
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="flex:1">点阵纹理</span>
+        <input type="checkbox" id="tw-texture" ${tweaks.dotTexture ? 'checked' : ''}>
+      </label>
+      <button id="tw-reset" style="width:100%;background:rgba(var(--accent-rgb),0.15);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:6px;padding:6px;cursor:pointer;font-size:11px;margin-top:4px">重置默认</button>
+    </div>
+  `;
+  document.body.appendChild(tweakPanel);
+
+  const apply = () => {
+    tweaks.accentColor = document.getElementById('tw-accent').value;
+    tweaks.bgColor = document.getElementById('tw-bg').value;
+    tweaks.dotTexture = document.getElementById('tw-texture').checked;
+    localStorage.setItem('planner_tweaks', JSON.stringify(tweaks));
+    document.documentElement.style.setProperty('--accent', tweaks.accentColor);
+    document.documentElement.style.setProperty('--bg', tweaks.bgColor);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: tweaks }, '*');
+  };
+
+  document.getElementById('tw-accent').addEventListener('input', apply);
+  document.getElementById('tw-bg').addEventListener('input', apply);
+  document.getElementById('tw-texture').addEventListener('change', apply);
+  document.getElementById('tw-reset').addEventListener('click', () => {
+    tweaks = { ...TWEAK_DEFAULTS };
+    localStorage.removeItem('planner_tweaks');
+    hideTweaks();
+    setTimeout(showTweaks, 100);
+  });
+}
+
+function hideTweaks() {
+  if (tweakPanel) { tweakPanel.remove(); tweakPanel = null; }
+}
+</script>
+</body>
+</html>
