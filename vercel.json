@@ -1,7 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/Planner.html" }
+    { "source": "/", "destination": "/Planner" }
   ],
   "headers": [
     {
