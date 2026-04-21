@@ -66,7 +66,7 @@ function safeParseJSON(text) {
 
 function AIChat({ open, onClose, context, onApplyActions }) {
   const [messages, setMessages] = useStateAI([
-    { role: 'assistant', content: '你好 ✦ 我是 Planner AI。告诉我你想安排什么，比如"4月23日三点要面试"，我会帮你记到对应位置。' }
+    { role: 'assistant', content: '你好 ✦ 我是 Margin。告诉我你想安排什么，比如"4月23日三点要面试"，我会帮你记到对应位置。' }
   ]);
   const [input, setInput] = useStateAI('');
   const [loading, setLoading] = useStateAI(false);
@@ -148,7 +148,7 @@ function AIChat({ open, onClose, context, onApplyActions }) {
         <div style={aiStyles.header}>
           <div style={aiStyles.headerLeft}>
             <span style={aiStyles.diamond}>✦</span>
-            <span style={aiStyles.title}>Planner AI</span>
+            <span style={aiStyles.title}>Margin</span>
           </div>
           <button onClick={onClose} className="p-ai-close" style={aiStyles.closeBtn} title="Close">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">

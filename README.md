@@ -1,4 +1,6 @@
-# 2026 Planner · 电子手账
+# Margin · 页边手账
+
+> Where your year lives in the margins.
 
 A browser-based 2026 planner with year/month/week/day views, four theme palettes, cloud sync, and an AI assistant that parses natural-language commands (`"4月23日三点面试"`) into structured calendar actions.
 

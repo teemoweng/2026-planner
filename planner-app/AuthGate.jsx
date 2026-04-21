@@ -57,9 +57,9 @@ function AuthScreen() {
   return (
     <div style={authStyles.center}>
       <div style={authStyles.card}>
-        <div style={authStyles.title}>2026 电子手帐</div>
+        <div style={authStyles.title}>Margin</div>
         <div style={authStyles.subtitle}>
-          {mode === 'signin' ? '登录你的账号' : '创建新账号'}
+          {mode === 'signin' ? '在页边写下你的 2026' : '创建一个专属于你的手账'}
         </div>
 
         <form onSubmit={submit} style={authStyles.form}>

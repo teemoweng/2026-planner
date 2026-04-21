@@ -29,7 +29,7 @@ function CoverPage({ onStart, theme = 'amber', onThemeChange }) {
     setTimeout(() => onStart(), 700);
   };
 
-  const plannerLetters = ['P','L','A','N','N','E','R'];
+  const plannerLetters = ['M','A','R','G','I','N'];
   const yearDigits = ['2','0','2','6'];
 
   return (
@@ -84,8 +84,8 @@ function CoverPage({ onStart, theme = 'amber', onThemeChange }) {
           ))}
         </div>
 
-        {/* "Start from here" */}
-        <div style={coverStyles.tagline} className="p-cover-tagline">Start from here</div>
+        {/* Tagline */}
+        <div style={coverStyles.tagline} className="p-cover-tagline">Where your year lives in the margins</div>
 
         {/* Divider: lines grow from center + diamond */}
         <div style={coverStyles.divider}>
