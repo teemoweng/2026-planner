@@ -58,6 +58,33 @@ function PlannerApp({ session }) {
   const today = new Date();
   const [blob, setBlob, cloudError] = useCloudBlob(session);
 
+  // Fatal load error — show it instead of spinning forever
+  if (blob === null && cloudError) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 16,
+        background: 'var(--bg)', color: 'var(--text)', padding: 40,
+        fontFamily: "'Inter', 'Noto Sans SC', system-ui, sans-serif",
+      }}>
+        <div style={{ fontSize: 14, color: 'var(--accent)' }}>☁ 云同步失败</div>
+        <div style={{ fontSize: 12, color: 'rgba(var(--text-rgb),0.6)', maxWidth: 560, textAlign: 'center', lineHeight: 1.6 }}>
+          {cloudError}
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+          <button onClick={() => location.reload()} style={{
+            padding: '8px 16px', background: 'var(--accent)', color: 'var(--bg)',
+            border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+          }}>重试</button>
+          <button onClick={() => window.cloud.signOut()} style={{
+            padding: '8px 16px', background: 'transparent', color: 'rgba(var(--text-rgb),0.6)',
+            border: '1px solid rgba(var(--accent-rgb),0.25)', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+          }}>登出</button>
+        </div>
+      </div>
+    );
+  }
+
   // While loading the blob, show a simple spinner
   if (blob === null) return <LoadingScreen label="Loading your planner…" />;
 
