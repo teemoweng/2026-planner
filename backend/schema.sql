@@ -48,6 +48,17 @@ create table if not exists user_settings (
 );
 
 -- ─────────────────────────────────────────────────────────────
+-- Whole-planner blob per user (MVP: keeps frontend diff tiny).
+-- Later can be split back into the per-date tables above.
+-- ─────────────────────────────────────────────────────────────
+
+create table if not exists user_data (
+  user_id    uuid        primary key references auth.users(id) on delete cascade,
+  data       jsonb       not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+-- ─────────────────────────────────────────────────────────────
 -- AI usage log (for per-user rate limiting + abuse detection)
 -- ─────────────────────────────────────────────────────────────
 
@@ -72,7 +83,13 @@ alter table planner_month_data enable row level security;
 alter table planner_week_data  enable row level security;
 alter table planner_notes      enable row level security;
 alter table user_settings      enable row level security;
+alter table user_data          enable row level security;
 alter table ai_usage           enable row level security;
+
+do $$ begin
+  create policy "own_rows" on user_data
+    using (user_id = auth.uid()) with check (user_id = auth.uid());
+exception when duplicate_object then null; end $$;
 
 do $$ begin
   create policy "own_rows" on planner_day_data

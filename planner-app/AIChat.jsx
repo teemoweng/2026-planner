@@ -109,16 +109,7 @@ function AIChat({ open, onClose, context, onApplyActions }) {
           content: m.content
         }))
       ];
-      const r = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ system: sysPrompt, messages: messagesForClaude }),
-      });
-      if (!r.ok) {
-        const errBody = await r.text();
-        throw new Error(`HTTP ${r.status}: ${errBody}`);
-      }
-      const data = await r.json();
+      const data = await window.cloud.chatAPI(sysPrompt, messagesForClaude);
       const response = data.text || '';
       const parsed = safeParseJSON(response);
       if (!parsed) {

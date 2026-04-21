@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any, Literal
 
 import httpx
@@ -166,6 +166,29 @@ async def get_settings(uid: str = Depends(current_user_id)):
 async def put_settings(body: SettingsUpsert, uid: str = Depends(current_user_id)):
     patch = {"user_id": uid} | {k: v for k, v in body.model_dump().items() if v is not None}
     sb.table("user_settings").upsert(patch, on_conflict="user_id").execute()
+    return {"ok": True}
+
+
+# ─── Whole-planner blob (MVP) ────────────────────────────────────────
+class UserDataIn(BaseModel):
+    data: dict[str, Any]
+
+
+@app.get("/api/user_data")
+async def get_user_data(uid: str = Depends(current_user_id)):
+    r = sb.table("user_data").select("data, updated_at").eq("user_id", uid).execute()
+    if r.data:
+        return {"data": r.data[0]["data"], "updated_at": r.data[0]["updated_at"]}
+    return {"data": {}, "updated_at": None}
+
+
+@app.put("/api/user_data")
+async def put_user_data(body: UserDataIn, uid: str = Depends(current_user_id)):
+    sb.table("user_data").upsert({
+        "user_id": uid,
+        "data": body.data,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }, on_conflict="user_id").execute()
     return {"ok": True}
 
 

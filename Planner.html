@@ -17,6 +17,16 @@
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<script>
+  // Frontend config — anon key is public (protected by RLS); safe to ship.
+  window.__PLANNER_CONFIG__ = {
+    supabaseUrl:     'https://xtyzkpjriljjkwwfrwyu.supabase.co',
+    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eXprcGpyaWxqamt3d2Zyd3l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTk4OTQsImV4cCI6MjA5MjI5NTg5NH0.iu1aeTObAyNbstuTDPT5ONlacWoZXhZyYxL1ZV-gelg',
+    apiBase:         'http://localhost:8001',
+  };
+</script>
 
 <style>
   /* ═══════════════════════════════════════
@@ -206,6 +216,9 @@
   @keyframes p-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
+  }
+  @keyframes p-spin {
+    to { transform: rotate(360deg); }
   }
 
   /* App shell fade */
@@ -456,6 +469,8 @@
 <body>
 <div id="root"></div>
 
+<script type="text/babel" src="planner-app/cloud.jsx"></script>
+<script type="text/babel" src="planner-app/AuthGate.jsx"></script>
 <script type="text/babel" src="planner-app/MarkdownEditor.jsx"></script>
 <script type="text/babel" src="planner-app/CoverPage.jsx"></script>
 <script type="text/babel" src="planner-app/Sidebar.jsx"></script>

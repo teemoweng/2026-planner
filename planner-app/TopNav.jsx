@@ -6,7 +6,7 @@ const VIEW_ICONS_DATA = [
   { id: 'week',   svg: '☰',  label: 'Weekly' },
 ];
 
-function TopNav({ year, month, onMonthSelect, view, onViewChange, title, onToday, onAIOpen }) {
+function TopNav({ year, month, onMonthSelect, view, onViewChange, title, onToday, onAIOpen, userEmail, onSignOut }) {
   const months = Array.from({ length: 12 }, (_, i) => i);
 
   return (
@@ -40,6 +40,17 @@ function TopNav({ year, month, onMonthSelect, view, onViewChange, title, onToday
 
       {/* Right controls: Today + segmented view */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 0, flexShrink: 0 }}>
+        {/* User badge + sign out */}
+        {userEmail && (
+          <div
+            onClick={onSignOut}
+            className="p-today-btn"
+            style={{ ...topNavStyles.todayBtn, fontSize: 11, letterSpacing: '0.04em' }}
+            title={`${userEmail} · 点击登出`}
+          >
+            {userEmail.split('@')[0]} · 登出
+          </div>
+        )}
         {/* Today button */}
         <div
           onClick={onToday}
