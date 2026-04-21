@@ -4,7 +4,7 @@
 
 A browser-based 2026 planner with year/month/week/day views, four theme palettes, cloud sync, and an AI assistant that parses natural-language commands (`"4月23日三点面试"`) into structured calendar actions.
 
-**🔗 Live demo:** https://2026-planner-mu.vercel.app
+**🔗 Live demo:** https://margin.day
 
 Sign up with any email; data is private per-account and stored in Supabase.
 
