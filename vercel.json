@@ -11,5 +11,8 @@
         { "key": "Referrer-Policy",          "value": "strict-origin-when-cross-origin" }
       ]
     }
+  ],
+  "crons": [
+    { "path": "/api/heartbeat", "schedule": "0 12 * * *" }
   ]
 }
